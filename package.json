@@ -4,6 +4,14 @@
   "description": "Encrypt .env files with keys stored outside the project, and run commands with automatic secret redaction — so LLM agents and logs never see your keys.",
   "type": "module",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/IamVNIE/env-protector-for-llm.git"
+  },
+  "homepage": "https://github.com/IamVNIE/env-protector-for-llm#readme",
+  "bugs": {
+    "url": "https://github.com/IamVNIE/env-protector-for-llm/issues"
+  },
   "engines": {
     "node": ">=22.13"
   },
