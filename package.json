@@ -1,0 +1,45 @@
+{
+  "name": "envshield",
+  "version": "0.1.0",
+  "description": "Encrypt .env files with keys stored outside the project, and run commands with automatic secret redaction — so LLM agents and logs never see your keys.",
+  "type": "module",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "bin": {
+    "envshield": "dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepack": "npm run build"
+  },
+  "keywords": [
+    "dotenv",
+    "env",
+    "secrets",
+    "encryption",
+    "redaction",
+    "llm",
+    "ai-agents",
+    "security"
+  ],
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsup": "^8.5.1",
+    "typescript": "^5.4.0",
+    "vitest": "^3.2.6"
+  }
+}
