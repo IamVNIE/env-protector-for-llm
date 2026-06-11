@@ -31,7 +31,7 @@ jobs:
   publish:
     needs: verify
     runs-on: ubuntu-latest
-    environment: npm-publish
+    environment: prod
     steps:
       - uses: actions/checkout@v4
 
