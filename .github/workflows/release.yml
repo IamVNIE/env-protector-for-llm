@@ -9,8 +9,26 @@ permissions:
   id-token: write # npm provenance
 
 jobs:
+  # Tags on commits that are not on main (e.g. tagged feature branches) must
+  # never publish a release.
+  guard:
+    name: tag is on main
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Ensure tagged commit is an ancestor of main
+        run: |
+          git fetch origin main --quiet
+          if ! git merge-base --is-ancestor HEAD origin/main; then
+            echo "::error::Tag ${GITHUB_REF_NAME} points to a commit that is not on main — refusing to release"
+            exit 1
+          fi
+
   verify:
     name: verify (${{ matrix.os }}, node ${{ matrix.node }})
+    needs: guard
     strategy:
       fail-fast: true
       matrix:
