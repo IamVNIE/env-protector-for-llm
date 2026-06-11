@@ -4,6 +4,7 @@ import path from 'node:path'
 import { Writable } from 'node:stream'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { cliMain } from '../src/commands.js'
+import { Keystore } from '../src/keystore.js'
 
 class MemWriter extends Writable {
   text = ''
@@ -164,7 +165,11 @@ describe('envshield keys', () => {
     expect(await cli('keys', 'list')).toBe(0)
     expect(out.text).toContain('.env')
     expect(out.text.toLowerCase()).toContain(path.basename(proj).toLowerCase())
-    expect(out.text).not.toMatch(/[A-Za-z0-9+/]{40,}/) // no base64 key blobs
+    const ks = new Keystore()
+    const key = ks.getOrCreateKey(proj, '.env')
+    ks.close()
+    expect(out.text).not.toContain(key.toString('base64'))
+    expect(out.text).not.toContain(key.toString('hex'))
   })
 
   it('keys path prints the keystore location', async () => {
