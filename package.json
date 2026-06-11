@@ -1,5 +1,5 @@
 {
-  "name": "envshield",
+  "name": "llm-envshield",
   "version": "0.1.0",
   "description": "Encrypt .env files with keys stored outside the project, and run commands with automatic secret redaction — so LLM agents and logs never see your keys.",
   "type": "module",

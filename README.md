@@ -1,4 +1,4 @@
-# envshield
+# llm-envshield
 
 Like dotenvx, but built for the age of AI coding agents: your `.env` stays encrypted in the
 project, the **key lives outside the project**, and command output is **automatically redacted**
@@ -7,7 +7,7 @@ so secrets never reach the terminal — or the LLM reading it.
 ## Install
 
 ```sh
-npm install -g envshield   # requires Node >= 22.13
+npm install -g llm-envshield   # requires Node >= 22.13; installs the `envshield` command
 ```
 
 ## Quick start
