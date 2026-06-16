@@ -29,6 +29,7 @@ Usage:
   envshield encrypt [-f <file>]            encrypt values (>= 5 chars) in place
   envshield decrypt [-f <file>] [--stdout] restore plaintext (key must exist locally)
   envshield run [-f <file>] -- <command>   run with decrypted env, secrets redacted in output
+                                           chain via the shell: run -- "a && b" (quote the whole line)
   envshield keys list                      show known projects (never key material)
   envshield keys path                      show keystore location
   envshield --version | --help

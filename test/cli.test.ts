@@ -157,6 +157,37 @@ describe('envshield run', () => {
     expect(await cli('run')).toBe(1)
     expect(err.text).toMatch(/usage|command/i)
   })
+
+  it('runs a quoted command line through the shell so && chains work', async () => {
+    await cli('encrypt')
+    const node = JSON.stringify(process.execPath)
+    // First command succeeds (exit 0), so the second runs and sets the exit code.
+    const code = await cli('run', '--', `${node} -e "process.exit(0)" && ${node} -e "process.exit(7)"`)
+    expect(code).toBe(7)
+  })
+
+  it('short-circuits a quoted chain when the first command fails', async () => {
+    await cli('encrypt')
+    const node = JSON.stringify(process.execPath)
+    const code = await cli('run', '--', `${node} -e "process.exit(4)" && ${node} -e "process.exit(0)"`)
+    expect(code).toBe(4)
+  })
+
+  it.runIf(process.platform === 'win32')('runs .cmd/.bat shims that Node will not exec directly', async () => {
+    await cli('encrypt')
+    // A bare `.cmd` cannot be spawned with shell:false on modern Node (EINVAL).
+    // Real shims (npm, npx, nodemon) live on PATH (npm prepends node_modules/.bin).
+    fs.writeFileSync(path.join(proj, 'greet.cmd'), '@echo hello %1\r\n')
+    const savedPath = process.env.PATH
+    process.env.PATH = `${proj}${path.delimiter}${savedPath ?? ''}`
+    try {
+      const code = await cli('run', '--', 'greet', 'world')
+      expect(code).toBe(0)
+      expect(out.text).toContain('hello world')
+    } finally {
+      process.env.PATH = savedPath
+    }
+  })
 })
 
 describe('envshield keys', () => {

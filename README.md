@@ -43,6 +43,28 @@ $ envshield run -- node -e "console.log(process.env.OPENAI_API_KEY)"
 | `envshield keys list` | Show which projects have keys (never the keys themselves) |
 | `envshield keys path` | Show the keystore location |
 
+### Running commands
+
+`envshield run` spawns your command as a **child process** with the decrypted env injected,
+so it works with `.cmd`/`.bat` shims on Windows (`npm`, `npx`, `nodemon`, …) too:
+
+```sh
+envshield run -- nodemon server.js
+envshield run -- docker compose up
+```
+
+It cannot, however, work like the shell builtin `source` — a separate process can't push env
+vars back into your shell, so `envshield source .env && docker compose up` is impossible by
+design (and would defeat output redaction). To chain commands, **quote the whole line** and let
+the shell run it under the injected env:
+
+```sh
+envshield run -- "npm run migrate && docker compose up"
+```
+
+Without quotes, your shell splits on `&&` before envshield sees it, so only the first command
+gets the secrets.
+
 ## How it works
 
 - Each `(project directory, env file)` pair gets its own AES-256-GCM key, stored in
