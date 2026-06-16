@@ -245,6 +245,18 @@ export async function cliMain(argv: string[], io: CliIo = {}): Promise<number> {
       }
       case 'keys':
         return cmdKeys(ctx, rawArgs[0])
+      case 'source':
+        ctx.stderr.write(
+          `error: "envshield source" is not supported — and can't be.\n` +
+            `"source" is a shell builtin: it loads variables into your current shell. envshield\n` +
+            `runs as a separate process, so it can't push env vars back into the shell where your\n` +
+            `next command runs. This is true on macOS, Linux, and Windows alike.\n\n` +
+            `Run your command as a child of envshield instead — it gets the decrypted env, and\n` +
+            `secrets are redacted from its output:\n` +
+            `  envshield run -- docker compose up\n` +
+            `  envshield run -- "npm run migrate && docker compose up"   (quote the line to chain)\n`,
+        )
+        return 1
       default:
         ctx.stderr.write(`error: unknown command "${command}"\n\n${HELP}`)
         return 1

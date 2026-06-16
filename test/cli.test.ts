@@ -219,4 +219,12 @@ describe('envshield misc', () => {
     expect(await cli('frobnicate')).toBe(1)
     expect(err.text).toMatch(/unknown command/i)
   })
+
+  it('source fails with a clear explanation pointing to run --', async () => {
+    expect(await cli('source', '.env')).toBe(1)
+    expect(err.text).toMatch(/not supported/i)
+    expect(err.text).toMatch(/shell builtin/i)
+    expect(err.text).toContain('envshield run -- ')
+    expect(err.text).not.toMatch(/unknown command/i) // not the generic fallthrough
+  })
 })
