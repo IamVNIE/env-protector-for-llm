@@ -1,5 +1,7 @@
 # llm-envshield
 
+[![npm version](https://img.shields.io/npm/v/llm-envshield.svg)](https://www.npmjs.com/package/llm-envshield)
+
 Like dotenvx, but built for the age of AI coding agents: your `.env` stays encrypted in the
 project, the **key lives outside the project**, and command output is **automatically redacted**
 so secrets never reach the terminal — or the LLM reading it.
