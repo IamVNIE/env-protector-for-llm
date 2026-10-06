@@ -5,6 +5,19 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- `envshield hooks install|uninstall|status [agent...]`: installs post-tool-call hooks into
+  Claude Code, Codex CLI, pi, OpenCode, Gemini CLI, and Cursor so protected `.env` values are
+  masked in every tool result before the model sees it — not just in `envshield run` output.
+  With no agents named, installs for every agent detected on the machine.
+- `envshield hook <agent>`: the hook entry point the agents call. Secrets are looked up via
+  the keystore for the project the agent is working in (and its sub/parent directories); it
+  fails open and never creates a keystore.
+- Library exports: `collectSecrets`, `redactDeep`, `handleHook`, `installHook`,
+  `uninstallHook`, `hookStatus`, `detectAgents`, `AGENTS`.
+
 ## [0.1.4] - 2026-06-16
 
 ### Internal

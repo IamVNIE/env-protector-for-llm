@@ -44,6 +44,9 @@ $ envshield run -- node -e "console.log(process.env.OPENAI_API_KEY)"
 | `envshield decrypt [-f <file>] [--stdout]` | Restore plaintext (for humans; `--stdout` doesn't touch the file) |
 | `envshield keys list` | Show which projects have keys (never the keys themselves) |
 | `envshield keys path` | Show the keystore location |
+| `envshield hooks install [agent...]` | Redact secrets from every tool result in your coding agents |
+| `envshield hooks uninstall [agent...]` | Remove those hooks (other settings untouched) |
+| `envshield hooks status` | Show where hooks are installed |
 
 ### Running commands
 
@@ -66,6 +69,36 @@ envshield run -- "npm run migrate && docker compose up"
 
 Without quotes, your shell splits on `&&` before envshield sees it, so only the first command
 gets the secrets.
+
+## Agent hooks: redact every tool result
+
+`envshield run` only protects output of commands you route through it. To make sure an agent
+*never* sees a secret — even when it `cat`s a log your app wrote, reads a decrypted file, or
+calls an MCP tool that echoes a key — install a post-tool-call hook:
+
+```sh
+envshield hooks install            # every supported agent detected on this machine
+envshield hooks install claude pi  # or pick agents explicitly
+```
+
+After each tool call the agent hands the result to `envshield hook <agent>`, which masks every
+protected value of the project being worked on (looked up via the keystore, including from
+subdirectories) before the model sees it. Projects you haven't encrypted are left alone.
+
+| Agent | Installed into | What gets redacted |
+|---|---|---|
+| Claude Code | `~/.claude/settings.json` (`PostToolUse`) | All tool output, replaced in place |
+| Codex CLI | `~/.codex/hooks.json` (`PostToolUse`) | All tool output, returned to the model as a blocked result¹ |
+| pi | `~/.pi/agent/extensions/envshield.js` | All tool output, replaced in place |
+| OpenCode | `~/.config/opencode/plugins/envshield.js` | All tool output, replaced in place |
+| Gemini CLI | `~/.gemini/settings.json` (`AfterTool`) | All tool output, returned to the model as a blocked result |
+| Cursor | `~/.cursor/hooks.json` | MCP output redacted; reads of files that contain secrets are denied. Cursor can't rewrite shell output, so use `envshield run` there |
+
+¹ Codex asks you to review and trust new hooks before they run.
+
+Install merges into your existing config (a `.envshield-backup` copy is kept), is idempotent, and
+refuses to touch a config file it can't parse. Hooks fail open: if something goes wrong, the
+agent keeps working with the original output. Restart the agent after installing.
 
 ## How it works
 

@@ -1,12 +1,27 @@
 import fs from 'node:fs'
 import { createRequire } from 'node:module'
+import os from 'node:os'
 import path from 'node:path'
 import type { Writable } from 'node:stream'
 import { decryptValue, encryptValue, isEncryptedValue } from './crypto.js'
 import { parseEnvPairs, transformEnvValues } from './envfile.js'
+import {
+  AGENTS,
+  type Agent,
+  type AgentPaths,
+  agentConfigFile,
+  detectAgents,
+  handleHook,
+  hookStatus,
+  installHook,
+  isAgent,
+  payloadCwd,
+  uninstallHook,
+} from './hooks.js'
 import { Keystore, keystoreDir } from './keystore.js'
 import { isProtectable } from './redact.js'
 import { runCommand } from './runner.js'
+import { collectSecrets } from './secrets.js'
 
 export interface CliIo {
   cwd?: string
@@ -14,6 +29,10 @@ export interface CliIo {
   stderr?: Writable
   /** stdin mode passed to `run` children. */
   stdin?: 'inherit' | 'ignore'
+  /** Hook payload; read from process.stdin when omitted. */
+  input?: string
+  /** Home directory whose agent configs `hooks` edits (default: os.homedir()). */
+  home?: string
 }
 
 interface Ctx {
@@ -21,6 +40,8 @@ interface Ctx {
   stdout: Writable
   stderr: Writable
   stdin: 'inherit' | 'ignore'
+  input: string | undefined
+  agentPaths: AgentPaths
 }
 
 const HELP = `envshield — encrypted .env with out-of-project keys + output redaction
@@ -32,6 +53,10 @@ Usage:
                                            chain via the shell: run -- "a && b" (quote the whole line)
   envshield keys list                      show known projects (never key material)
   envshield keys path                      show keystore location
+  envshield hooks install [agent...]       redact secrets from every agent tool result
+                                           (agents: ${AGENTS.join(', ')}; default: all detected)
+  envshield hooks uninstall [agent...]     remove envshield hooks (default: all)
+  envshield hooks status                   show where hooks are installed
   envshield --version | --help
 
 Keys live in ${path.join('~', '.envshield', 'keystore.db')} (override dir with ENVSHIELD_HOME),
@@ -194,6 +219,85 @@ function cmdKeys(ctx: Ctx, sub: string | undefined): number {
   return 1
 }
 
+async function readAllStdin(): Promise<string> {
+  const chunks: Buffer[] = []
+  for await (const chunk of process.stdin) chunks.push(chunk as Buffer)
+  return Buffer.concat(chunks).toString('utf8')
+}
+
+/**
+ * `envshield hook <agent>`: called by the agent after every tool call with the
+ * result on stdin. Fails open (exit 0, output untouched) on bad input, so a
+ * hook problem never wedges the agent.
+ */
+async function cmdHook(ctx: Ctx, agent: string | undefined): Promise<number> {
+  if (!agent || !(isAgent(agent) || agent === 'generic')) {
+    ctx.stderr.write(`usage: envshield hook <${AGENTS.join('|')}|generic>  (called by the agent, not by hand)\n`)
+    return 1
+  }
+  try {
+    const raw = ctx.input ?? (await readAllStdin())
+    const input = JSON.parse(raw) as Record<string, unknown>
+    const result = handleHook(agent, input, collectSecrets(payloadCwd(input)))
+    if (result.stdout !== undefined) ctx.stdout.write(result.stdout)
+    return result.exitCode
+  } catch (error) {
+    ctx.stderr.write(`envshield hook: ${error instanceof Error ? error.message : String(error)}\n`)
+    return 0
+  }
+}
+
+function parseAgents(ctx: Ctx, names: string[]): Agent[] | undefined {
+  const bad = names.filter((n) => !isAgent(n))
+  if (bad.length > 0) {
+    ctx.stderr.write(`error: unknown agent(s): ${bad.join(', ')} (supported: ${AGENTS.join(', ')})\n`)
+    return undefined
+  }
+  return names as Agent[]
+}
+
+const AGENT_NOTES: Partial<Record<Agent, string>> = {
+  codex: 'Codex asks you to review and trust new hooks before they run; output is replaced as a blocked result',
+  gemini: 'redacted output reaches the model as a blocked tool result',
+  cursor: 'MCP results redacted, reads of files holding secrets denied; shell output cannot be rewritten in Cursor',
+}
+
+function cmdHooks(ctx: Ctx, sub: string | undefined, rest: string[]): number {
+  const paths = ctx.agentPaths
+  if (sub === 'status') {
+    for (const agent of AGENTS) {
+      ctx.stdout.write(`${agent.padEnd(9)} ${hookStatus(agent, paths).padEnd(14)} ${agentConfigFile(agent, paths)}\n`)
+    }
+    return 0
+  }
+  if (sub === 'install') {
+    const requested = parseAgents(ctx, rest)
+    if (!requested) return 1
+    const agents = requested.length > 0 ? requested : detectAgents(paths)
+    if (agents.length === 0) {
+      ctx.stderr.write(`no supported agents detected — name them explicitly: envshield hooks install <${AGENTS.join('|')}>\n`)
+      return 1
+    }
+    for (const agent of agents) {
+      const file = installHook(agent, paths)
+      const note = AGENT_NOTES[agent]
+      ctx.stdout.write(`${agent}: hook installed in ${file}${note ? `\n  note: ${note}` : ''}\n`)
+    }
+    ctx.stdout.write('tool output in these agents is now redacted for every project encrypted with envshield\n')
+    return 0
+  }
+  if (sub === 'uninstall') {
+    const requested = parseAgents(ctx, rest)
+    if (!requested) return 1
+    for (const agent of requested.length > 0 ? requested : AGENTS) {
+      if (uninstallHook(agent, paths)) ctx.stdout.write(`${agent}: hook removed from ${agentConfigFile(agent, paths)}\n`)
+    }
+    return 0
+  }
+  ctx.stderr.write('usage: envshield hooks <install|uninstall|status> [agent...]\n')
+  return 1
+}
+
 /** Pull `-f <file>` / `--file <file>` out of an argument list. */
 function extractFileOption(args: string[]): { file: string | undefined; rest: string[] } {
   const rest: string[] = []
@@ -214,6 +318,8 @@ export async function cliMain(argv: string[], io: CliIo = {}): Promise<number> {
     stdout: io.stdout ?? process.stdout,
     stderr: io.stderr ?? process.stderr,
     stdin: io.stdin ?? 'ignore',
+    input: io.input,
+    agentPaths: { home: io.home ?? os.homedir(), env: process.env },
   }
   const [command, ...rawArgs] = argv
 
@@ -245,6 +351,10 @@ export async function cliMain(argv: string[], io: CliIo = {}): Promise<number> {
       }
       case 'keys':
         return cmdKeys(ctx, rawArgs[0])
+      case 'hook':
+        return await cmdHook(ctx, rawArgs[0])
+      case 'hooks':
+        return cmdHooks(ctx, rawArgs[0], rawArgs.slice(1))
       case 'source':
         ctx.stderr.write(
           `error: "envshield source" is not supported — and can't be.\n` +

@@ -21,3 +21,13 @@ export { runCommand } from './runner.js'
 export type { RunOptions } from './runner.js'
 export { cliMain } from './commands.js'
 export type { CliIo } from './commands.js'
+export { collectSecrets, redactDeep } from './secrets.js'
+export {
+  AGENTS,
+  handleHook,
+  installHook,
+  uninstallHook,
+  hookStatus,
+  detectAgents,
+} from './hooks.js'
+export type { Agent, AgentPaths, HookResult } from './hooks.js'
