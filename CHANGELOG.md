@@ -5,7 +5,7 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.3.0] - 2026-10-08
 
 ### Added
 - `envshield encrypt` adds a comment preamble at the top of encrypted env files telling
@@ -67,6 +67,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add repository metadata required for npm provenance verification.
 - Rename package to `llm-envshield` (CLI command unchanged).
 
+[0.3.0]: https://github.com/IamVNIE/env-protector-for-llm/releases/tag/v0.3.0
 [0.2.0]: https://github.com/IamVNIE/env-protector-for-llm/releases/tag/v0.2.0
 [0.1.4]: https://github.com/IamVNIE/env-protector-for-llm/releases/tag/v0.1.4
 [0.1.3]: https://github.com/IamVNIE/env-protector-for-llm/releases/tag/v0.1.3
