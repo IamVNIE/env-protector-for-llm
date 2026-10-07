@@ -15,7 +15,13 @@ export {
 } from './crypto.js'
 export { Keystore, keystoreDir, keyId, normalizeProjectDir } from './keystore.js'
 export type { KeystoreEntry } from './keystore.js'
-export { parseEnvPairs, transformEnvValues } from './envfile.js'
+export {
+  parseEnvPairs,
+  transformEnvValues,
+  addPreamble,
+  removePreamble,
+  PREAMBLE_MARKER,
+} from './envfile.js'
 export type { EnvPair } from './envfile.js'
 export { runCommand } from './runner.js'
 export type { RunOptions } from './runner.js'

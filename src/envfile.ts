@@ -69,3 +69,40 @@ export function transformEnvValues(
     })
     .join(eol)
 }
+
+/** First line of the agent-facing preamble; its presence anywhere means "already added". */
+export const PREAMBLE_MARKER = '# --- envshield: encrypted env file ---'
+
+const PREAMBLE_LINES = [
+  PREAMBLE_MARKER,
+  '# Values starting with "enc:gcm:" are AES-256-GCM encrypted. The key is NOT in this',
+  '# project; it lives in the user\'s keystore. Notes for AI agents and tools:',
+  '#  - Do not try to decrypt these values or read ~/.envshield. You don\'t need them.',
+  '#  - Run anything that needs these variables through envshield:',
+  '#      envshield run -- npm start',
+  '#      envshield run -- "npm run migrate && npm test"   (quote the line to chain)',
+  '#  - Secrets show up masked (e.g. ************ab) in output. That is expected.',
+  '#  - To add a variable: append KEY=value to this file, then run: envshield encrypt',
+  '#  - Never run "envshield decrypt"; it is for humans only.',
+  '# --- end envshield ---',
+]
+
+function eolOf(content: string): string {
+  return content.includes('\r\n') ? '\r\n' : '\n'
+}
+
+function preambleText(eol: string): string {
+  return PREAMBLE_LINES.join(eol) + eol + eol
+}
+
+/** Prepend the agent-facing usage preamble unless the file already has one. */
+export function addPreamble(content: string): string {
+  if (content.includes(PREAMBLE_MARKER)) return content
+  return preambleText(eolOf(content)) + content
+}
+
+/** Remove the preamble added by addPreamble (only if it is still verbatim at the top). */
+export function removePreamble(content: string): string {
+  const text = preambleText(eolOf(content))
+  return content.startsWith(text) ? content.slice(text.length) : content
+}

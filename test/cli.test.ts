@@ -4,6 +4,7 @@ import path from 'node:path'
 import { Writable } from 'node:stream'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { cliMain } from '../src/commands.js'
+import { PREAMBLE_MARKER } from '../src/envfile.js'
 import { Keystore } from '../src/keystore.js'
 
 class MemWriter extends Writable {
@@ -71,6 +72,33 @@ describe('envshield encrypt', () => {
     expect(readEnv()).toBe(once)
     // nothing new in the project dir except .env (no .env.keys like dotenvx)
     expect(fs.readdirSync(proj)).toEqual(['.env'])
+  })
+
+  it('adds an agent-facing usage preamble once, at the top', async () => {
+    await cli('encrypt')
+    const content = readEnv()
+    expect(content.startsWith(PREAMBLE_MARKER)).toBe(true)
+    expect(content).toContain('envshield run -- ')
+    expect(content.split(PREAMBLE_MARKER)).toHaveLength(2)
+    fs.appendFileSync(envPath(), 'NEW_TOKEN=another-secret-value\n')
+    await cli('encrypt')
+    expect(readEnv().split(PREAMBLE_MARKER)).toHaveLength(2) // not duplicated on re-encrypt
+    expect(readEnv()).toMatch(/NEW_TOKEN=enc:gcm:/)
+  })
+
+  it('adds no preamble when nothing ends up encrypted', async () => {
+    fs.writeFileSync(envPath(), 'PORT=8080\nDEBUG=1\n')
+    await cli('encrypt')
+    expect(readEnv()).toBe('PORT=8080\nDEBUG=1\n')
+  })
+
+  it('keeps CRLF line endings in the preamble and still round-trips', async () => {
+    const crlf = ENV_CONTENT.replace(/\n/g, '\r\n')
+    fs.writeFileSync(envPath(), crlf)
+    await cli('encrypt')
+    expect(readEnv()).not.toMatch(/[^\r]\n/)
+    await cli('decrypt')
+    expect(readEnv()).toBe(crlf)
   })
 
   it('fails cleanly when the env file is missing', async () => {

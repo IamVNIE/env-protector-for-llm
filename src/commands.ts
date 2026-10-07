@@ -4,7 +4,7 @@ import os from 'node:os'
 import path from 'node:path'
 import type { Writable } from 'node:stream'
 import { decryptValue, encryptValue, isEncryptedValue } from './crypto.js'
-import { parseEnvPairs, transformEnvValues } from './envfile.js'
+import { addPreamble, parseEnvPairs, removePreamble, transformEnvValues } from './envfile.js'
 import {
   AGENTS,
   type Agent,
@@ -108,7 +108,7 @@ function cmdEncrypt(ctx: Ctx, file: string | undefined): number {
     const key = keystore.getOrCreateKey(dir, base)
     let encrypted = 0
     let skippedShort = 0
-    const next = transformEnvValues(content, (_key, value) => {
+    const transformed = transformEnvValues(content, (_key, value) => {
       if (isEncryptedValue(value) || value.length === 0) return undefined
       if (!isProtectable(value)) {
         skippedShort++
@@ -117,6 +117,9 @@ function cmdEncrypt(ctx: Ctx, file: string | undefined): number {
       encrypted++
       return encryptValue(value, key)
     })
+    // Tell agents reading the file how to work with it, once there is something encrypted.
+    const hasEncrypted = parseEnvPairs(transformed).some((p) => isEncryptedValue(p.value))
+    const next = hasEncrypted ? addPreamble(transformed) : transformed
     if (next !== content) atomicWrite(filePath, next)
     ctx.stdout.write(
       `encrypted ${encrypted} value(s) in ${base}` +
@@ -138,7 +141,7 @@ function cmdDecrypt(ctx: Ctx, file: string | undefined, toStdout: boolean): numb
   try {
     const key = keystore.getKey(dir, base)
     if (!key) return noKeyError(ctx, dir, base)
-    const next = transformEnvValues(content, (_key, value) =>
+    const next = transformEnvValues(removePreamble(content), (_key, value) =>
       isEncryptedValue(value) ? decryptValue(value, key) : undefined,
     )
     if (toStdout) {

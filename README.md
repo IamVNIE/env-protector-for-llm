@@ -23,6 +23,11 @@ envshield run -- npm start         # runs with decrypted env, output redacted
 Your `.env` now looks like this — safe to leave in the repo an agent works on:
 
 ```dotenv
+# --- envshield: encrypted env file ---
+# Values starting with "enc:gcm:" are AES-256-GCM encrypted. The key is NOT in this
+# project; ... (usage notes for agents: run commands via `envshield run -- <cmd>`)
+# --- end envshield ---
+
 OPENAI_API_KEY=enc:gcm:Mylncwi/ckLh8qwCvDkcUxdFuiL4EDdT...
 DB_PASSWORD="enc:gcm:BLvFH180xMOoA7srcUOn23AGV13qxbNq..."
 PORT=8080
@@ -108,6 +113,9 @@ agent keeps working with the original output. Restart the agent after installing
   output through a redactor that masks every protected value, even across chunk boundaries.
 - Values **shorter than 5 characters** (ports, flags like `DEBUG=1`) are left as-is: not
   encrypted, not redacted.
+- On first encrypt, a short comment **preamble** is added at the top telling agents what the
+  file is and to use `envshield run -- <cmd>` instead of trying to decrypt. It's added once
+  (edit or delete it and it stays that way), and `decrypt` removes it again.
 - Comments, ordering, quoting, and line endings in your `.env` are preserved; encrypt → decrypt
   restores the file byte-for-byte.
 

@@ -5,6 +5,14 @@ All notable changes to this project are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- `envshield encrypt` adds a comment preamble at the top of encrypted env files telling
+  AI agents what the file is and how to work with it (`envshield run -- <cmd>`, don't try
+  to decrypt). Added once, only when the file has encrypted values; `decrypt` strips it, so
+  encrypt → decrypt still restores the file byte-for-byte.
+
 ## [0.2.0] - 2026-10-07
 
 ### Added
