@@ -1,6 +1,6 @@
 > [!IMPORTANT]
-> **This project has moved to [IamVNIE/ai-agent-secret](https://github.com/IamVNIE/ai-agent-secret)**
-> and is now published on npm as [`ai-agent-secret`](https://www.npmjs.com/package/ai-agent-secret)
+> **This project has moved to [IamVNIE/ai-agent-secrets](https://github.com/IamVNIE/ai-agent-secrets)**
+> and is now published on npm as [`ai-agent-secrets`](https://www.npmjs.com/package/ai-agent-secrets)
 > (CLI: `agentshield`). This repository is no longer maintained.
 
 # llm-envshield
