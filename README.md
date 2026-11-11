@@ -1,3 +1,8 @@
+> [!IMPORTANT]
+> **This project has moved to [IamVNIE/ai-agent-secret](https://github.com/IamVNIE/ai-agent-secret)**
+> and is now published on npm as [`ai-agent-secret`](https://www.npmjs.com/package/ai-agent-secret)
+> (CLI: `agentshield`). This repository is no longer maintained.
+
 # llm-envshield
 
 [![npm version](https://img.shields.io/npm/v/llm-envshield.svg)](https://www.npmjs.com/package/llm-envshield)
